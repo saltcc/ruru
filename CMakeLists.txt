@@ -5,7 +5,11 @@ option(WITH_TESTS "Build tests" OFF)
 set(EXAMPLES_DIR ${CMAKE_CURRENT_BINARY_DIR}/examples)
 
 add_library(ruru
-    test.cpp
+    RuruCert.cpp
+    RuruDtls.cpp
+    RuruSctp.cpp
+    RuruClient.cpp
+    RuruNetwork.cpp
 )
 
 set(CXX_FLAGS
@@ -111,7 +115,8 @@ install(TARGETS ruru EXPORT ruruTargets
     PUBLIC_HEADER DESTINATION include
 )
 
-install(FILES test.h DESTINATION include)
+file(GLOB HEADERS "*.h")
+install(FILES ${HEADERS} DESTINATION include)
 
 add_executable(EchoServer examples/EchoServer.cpp)
 target_link_libraries(EchoServer ruru)
