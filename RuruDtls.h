@@ -18,6 +18,11 @@ public:
 class RuruDtls
 {
 public:
-    RuruDtls();
+    RuruDtls(RuruDtlsCtx *ctx);
     ~RuruDtls();
+
+    SSL* ssl;
+    BIO* inBio;
+    BIO* outBio;
+    bool bHandShakeDone;
 };

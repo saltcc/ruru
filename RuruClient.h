@@ -1,8 +1,14 @@
 #pragma once
 
+#include "RuruDtls.h"
+#include "RuruSctp.h"
+
 class RuruClient
 {
 public:
-    RuruClient();
+    RuruClient(RuruDtlsCtx *ctx);
     ~RuruClient();
+
+    RuruDtls dtlsTransport;
+    RuruSctp sctpTransport;
 };

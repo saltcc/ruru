@@ -49,12 +49,26 @@ RuruDtlsCtx::~RuruDtlsCtx()
     }
 }
 
-RuruDtls::RuruDtls()
+RuruDtls::RuruDtls(RuruDtlsCtx *dtlsCtx)
 {
-
+    ssl = SSL_new(dtlsCtx->ctx);
+    inBio = BIO_new(BIO_s_mem());
+    BIO_set_mem_eof_return(inBio, -1);
+    outBio = BIO_new(BIO_s_mem());
+    BIO_set_mem_eof_return(outBio, -1);
+    SSL_set_bio(ssl, inBio, outBio);
+    SSL_set_options(ssl, SSL_OP_SINGLE_ECDH_USE);
+    SSL_set_options(ssl, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+    SSL_set_tmp_ecdh(ssl, EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
+    SSL_set_accept_state(ssl);
+    SSL_set_mtu(ssl, 1400);
+    bHandShakeDone = false;
 }
 
 RuruDtls::~RuruDtls()
 {
-
+    SSL_free(ssl);
+    ssl = NULL;
+    inBio = NULL;
+    outBio = NULL;
 }

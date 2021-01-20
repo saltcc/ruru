@@ -1,6 +1,7 @@
 #include "RuruSctp.h"
+#include "RuruClient.h"
 
-RuruSctp::RuruSctp()
+RuruSctp::RuruSctp(RuruClient *client)
 {
 }
 

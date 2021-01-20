@@ -1,6 +1,6 @@
 #include "RuruClient.h"
 
-RuruClient::RuruClient()
+RuruClient::RuruClient(RuruDtlsCtx *ctx):dtlsTransport(ctx),sctpTransport(this)
 {
 }
 
