@@ -67,8 +67,11 @@ RuruDtls::RuruDtls(RuruDtlsCtx *dtlsCtx)
 
 RuruDtls::~RuruDtls()
 {
-    SSL_free(ssl);
-    ssl = NULL;
+    if (ssl){
+        SSL_free(ssl);
+        ssl = NULL;
+    }
+
     inBio = NULL;
     outBio = NULL;
 }
