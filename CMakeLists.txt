@@ -10,6 +10,7 @@ add_library(ruru
     RuruSctp.cpp
     RuruClient.cpp
     RuruNetwork.cpp
+    RuruLoop.cpp
 )
 
 set(CXX_FLAGS

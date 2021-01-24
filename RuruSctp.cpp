@@ -13,20 +13,20 @@ enum PayloadProtocolIdentifier {
   PPID_TEXT_LAST = 51
 };
 
-RuruSctp::RuruSctp(RuruClient *client)
+RuruSctp::RuruSctp(RuruClient *cli)
 {
-    if (!client){
+    if (!cli){
         return;
     }
-    client_ = client;
+    client = cli;
 
     if (!usrsctpInit_){
         UsrsctpStartInit();
     }
 
-    sock_ = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &RuruSctp::OnSctpInboundPacket, NULL, 0, this);
+    sock_ = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, &RuruSctp::OnSctpInboundPacket, nullptr, 0, this);
 
-    if (sock_ == NULL){
+    if (sock_ == nullptr){
         perror("usrsctp_socket");
         return;
     }
@@ -50,8 +50,16 @@ RuruSctp::~RuruSctp()
 {
 }
 
-int32_t RuruSctp::OnSctpOutboundPacket(void *addr, void *data, size_t len, uint8_t tos, uint8_t set_df)
+int32_t RuruSctp::OnSctpOutboundPacket(void *addr, void *data, size_t length, uint8_t tos, uint8_t set_df)
 {
+    if (!data){
+        return 0;
+    }
+
+    RuruSctp *transport = (RuruSctp *)addr;
+    if (transport->client){
+        transport->client->ClientSendData((uint8_t *)data, length);
+    }
     return 0;
 }
 
@@ -65,13 +73,17 @@ int32_t RuruSctp::OnSctpInboundPacket(struct socket* sock,
 {
     RuruSctp* transport = static_cast<RuruSctp*>(ulp_info);
     (void)transport;
+    if (data){
+        printf("===========:%s\n", (char *)data);
+        free(data);
+    }
     return 0;
 }
 
 void RuruSctp::UsrsctpStartInit()
 {
     if (!usrsctpInit_){
-        usrsctp_init(0, &RuruSctp::OnSctpOutboundPacket, NULL);
+        usrsctp_init(0, &RuruSctp::OnSctpOutboundPacket, nullptr);
         usrsctp_sysctl_set_sctp_ecn_enable(0);
         usrsctpInit_ = true;
     }
@@ -125,7 +137,7 @@ void RuruSctp::CloseSctpSocket()
     if(sock_){
         usrsctp_close(sock_);
         sock_ = nullptr;
-        usrsctp_deregister_address(client_);
+        usrsctp_deregister_address(client);
     }
 }
 
@@ -141,4 +153,30 @@ void RuruSctp::UsrsctpUnInit()
 int32_t RuruSctp::SendUsrSctpData(const uint8_t *data, int32_t length)
 {
     return length;
+}
+
+void RuruSctp::RecvUsrSctpData(const uint8_t *data, int32_t length)
+{
+    if (!data){
+        return;
+    }
+
+    if (!bHandShakeDone){
+
+        struct sockaddr_conn sconn;
+        memset(&sconn, 0, sizeof(sconn));
+        sconn.sconn_family = AF_CONN;
+        sconn.sconn_port = htons(5001);
+        sconn.sconn_addr = (void *)this;
+        socklen_t len = sizeof sconn;
+
+        struct socket *s = usrsctp_accept(sock_, (struct sockaddr *)&sconn, &len);
+        if (s){
+            usrsctp_close(sock_);
+            sock_ = s;
+            bHandShakeDone = true;
+        }
+    }
+
+    usrsctp_conninput(this, data, (size_t)length, 0);
 }

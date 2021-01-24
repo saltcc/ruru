@@ -21,6 +21,8 @@ public:
     RuruDtls(RuruDtlsCtx *ctx);
     ~RuruDtls();
 
+    void HandleDtlsPacket(const uint8_t *data, int32_t length);
+
     SSL* ssl;
     BIO* inBio;
     BIO* outBio;

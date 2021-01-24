@@ -15,6 +15,8 @@ public:
 
     static void UsrsctpStartInit();
     int32_t SendUsrSctpData(const uint8_t *data, int32_t length);
+    void RecvUsrSctpData(const uint8_t *data, int32_t length);
+    RuruClient *client;
 
 private:
     static int32_t OnSctpOutboundPacket(void *addr, void *data, size_t len, uint8_t tos, uint8_t set_df);
@@ -24,6 +26,4 @@ private:
     void CloseSctpSocket();
     static bool usrsctpInit_;
     struct socket *sock_;
-    RuruClient *client_;
-    
 };

@@ -10,7 +10,7 @@ RuruDtlsCtx::RuruDtlsCtx()
     OpenSSL_add_all_algorithms();
 
     ctx = SSL_CTX_new(DTLSv1_method());
-    if (ctx == NULL){
+    if (ctx == nullptr){
         ERR_print_errors_fp(stderr);
         return;
     }
@@ -20,7 +20,7 @@ RuruDtlsCtx::RuruDtlsCtx()
         return;
     }
 
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nullptr);
 
     RuruCert cert;
 
@@ -45,7 +45,7 @@ RuruDtlsCtx::~RuruDtlsCtx()
 {
     if (ctx){
         SSL_CTX_free(ctx);
-        ctx = NULL;
+        ctx = nullptr;
     }
 }
 
@@ -62,6 +62,7 @@ RuruDtls::RuruDtls(RuruDtlsCtx *dtlsCtx)
     SSL_set_tmp_ecdh(ssl, EC_KEY_new_by_curve_name(NID_X9_62_prime256v1));
     SSL_set_accept_state(ssl);
     SSL_set_mtu(ssl, 1400);
+    SSL_set_accept_state(ssl);
     bHandShakeDone = false;
 }
 
@@ -69,9 +70,9 @@ RuruDtls::~RuruDtls()
 {
     if (ssl){
         SSL_free(ssl);
-        ssl = NULL;
+        ssl = nullptr;
     }
 
-    inBio = NULL;
-    outBio = NULL;
+    inBio = nullptr;
+    outBio = nullptr;
 }

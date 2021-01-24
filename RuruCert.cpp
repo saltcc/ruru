@@ -7,7 +7,7 @@ RuruCert::RuruCert()
     RSA *rsa = RSA_new();
     BN_set_word(exponent, RSA_F4);
 
-    RSA_generate_key_ex(rsa, 1024, exponent, NULL);
+    RSA_generate_key_ex(rsa, 1024, exponent, nullptr);
     EVP_PKEY_assign_RSA(key, rsa);
 
     X509_set_pubkey(x509, key);
