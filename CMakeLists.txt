@@ -104,6 +104,9 @@ target_compile_options(ruru
 )
 
 target_link_libraries(ruru
+    -lssl
+    -lcrypto
+    -lusrsctp
     -lpthread
     -lm
 )
@@ -122,7 +125,10 @@ install(FILES ${HEADERS} DESTINATION include)
 add_executable(EchoServer examples/EchoServer.cpp)
 target_link_libraries(EchoServer ruru)
 
-set_target_properties(ruru EchoServer PROPERTIES
+add_executable(Client examples/EchoClient.cpp)
+target_link_libraries(Client ruru)
+
+set_target_properties(ruru EchoServer Client PROPERTIES
     CXX_STANDARD 11
     RUNTIME_OUTPUT_DIRECTORY ${EXAMPLES_DIR}
 )

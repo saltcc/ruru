@@ -17,6 +17,7 @@ public:
     int32_t SendUsrSctpData(const uint8_t *data, int32_t length);
     void RecvUsrSctpData(const uint8_t *data, int32_t length);
     RuruClient *client;
+    bool OpenSctp();
 
 private:
     static int32_t OnSctpOutboundPacket(void *addr, void *data, size_t len, uint8_t tos, uint8_t set_df);

@@ -1,6 +1,10 @@
 #include "RuruLoop.h"
 #include "RuruNetwork.h"
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <iostream>
+
+RuruDtlsCtx RuruLoop::dtsCtx_;
 
 RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
 {
@@ -10,12 +14,15 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
         return;
     }
 
+    std::cout<<"CreateUdpSocket ok"<<std::endl;
+
     int32_t ret = SetNonBlocking(udpfd_);
     if (ret < 0){
         perror("RuruLoop SetNonBlocking");
         Destory();
         return;
     }
+    std::cout<< "SetNonBlocking ok"<<std::endl;
     RuruSctp::UsrsctpStartInit();
 }
 
@@ -34,6 +41,12 @@ void RuruLoop::Destory()
 
 int32_t RuruLoop::Loop()
 {
+    RuruAddress address;
+    address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
+    address.port = 8000;
+    RuruClient *client = new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_);
+    clientMgr_.push_back(client);
+
     while(1)
     {
         struct sockaddr_in remote;

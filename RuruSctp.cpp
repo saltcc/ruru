@@ -13,6 +13,8 @@ enum PayloadProtocolIdentifier {
   PPID_TEXT_LAST = 51
 };
 
+bool RuruSctp::usrsctpInit_ = false;
+
 RuruSctp::RuruSctp(RuruClient *cli)
 {
     if (!cli){
@@ -20,7 +22,7 @@ RuruSctp::RuruSctp(RuruClient *cli)
     }
     client = cli;
 
-    if (!usrsctpInit_){
+    if (!RuruSctp::usrsctpInit_){
         UsrsctpStartInit();
     }
 
@@ -30,6 +32,8 @@ RuruSctp::RuruSctp(RuruClient *cli)
         perror("usrsctp_socket");
         return;
     }
+
+    usrsctp_register_address(this);
 
     if (!ConfigureSctpSocket()){
         perror("ConfigureSctpSocket");
@@ -41,8 +45,7 @@ RuruSctp::RuruSctp(RuruClient *cli)
         CloseSctpSocket();
         return;
     }
-
-    usrsctp_register_address(this);
+    
     bHandShakeDone = false;
 }
 
@@ -82,14 +85,14 @@ int32_t RuruSctp::OnSctpInboundPacket(struct socket* sock,
 
 void RuruSctp::UsrsctpStartInit()
 {
-    if (!usrsctpInit_){
+    if (!RuruSctp::usrsctpInit_){
         usrsctp_init(0, &RuruSctp::OnSctpOutboundPacket, nullptr);
         usrsctp_sysctl_set_sctp_ecn_enable(0);
-        usrsctpInit_ = true;
+        RuruSctp::usrsctpInit_ = true;
     }
     
 }
-
+int abc;
 bool RuruSctp::ConfigureSctpSocket()
 {
     if (usrsctp_set_non_blocking(sock_, 1) < 0) {
@@ -122,8 +125,8 @@ bool RuruSctp::ConfigureSctpSocket()
     struct sockaddr_conn sconn;
     memset(&sconn, 0, sizeof(sconn));
     sconn.sconn_family = AF_CONN;
-    sconn.sconn_port = 5001;
-    sconn.sconn_addr = (void *)this;
+    sconn.sconn_port = htons(5001);
+    sconn.sconn_addr = this;
     if (usrsctp_bind(sock_, (struct sockaddr *)&sconn, sizeof(sconn)) < 0){
         perror("usrsctp_bind");
         return false;
