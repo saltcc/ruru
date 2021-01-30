@@ -3,7 +3,7 @@
 RuruClient::RuruClient(RuruDtlsCtx *ctx, RuruAddress address, int32_t fd):dtlsTransport(ctx),sctpTransport(this)
 {
     udpfd_ = fd;
-    address = address;
+    this->address = address;
 }
 
 RuruClient::~RuruClient()

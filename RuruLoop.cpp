@@ -8,13 +8,11 @@ RuruDtlsCtx RuruLoop::dtsCtx_;
 
 RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
 {
-    udpfd_ = CreateUdpSocket(port);
+    udpfd_ = CreateUdpSocket(host, port);
     if (udpfd_ < 0){
         perror("RuruLoop CreateUdpSocket");
         return;
     }
-
-    std::cout<<"CreateUdpSocket ok"<<std::endl;
 
     int32_t ret = SetNonBlocking(udpfd_);
     if (ret < 0){
@@ -22,7 +20,7 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
         Destory();
         return;
     }
-    std::cout<< "SetNonBlocking ok"<<std::endl;
+
     RuruSctp::UsrsctpStartInit();
 }
 

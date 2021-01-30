@@ -51,15 +51,22 @@ int32_t CreateTcpSocket(const uint8_t *port)
     return CreateSocket(port, hints);
 }
 
-int32_t CreateUdpSocket(const uint8_t *port)
+int32_t CreateUdpSocket(const uint8_t *host, const uint8_t *port)
 {
-    struct addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    return CreateSocket(port, hints);
+    struct sockaddr_in svr_addr;
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+    {
+        return -1;
+    }
+    svr_addr.sin_family = AF_INET;
+    svr_addr.sin_port = htons(9999);
+    svr_addr.sin_addr.s_addr = inet_addr("192.168.28.128");
+    if (bind(fd, (struct sockaddr*)&svr_addr, sizeof(svr_addr)) < 0)
+    {
+        return -1;
+    }
+    return fd;
 }
 
 int32_t SetNonBlocking(int32_t sfd)
