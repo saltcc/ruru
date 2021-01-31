@@ -28,6 +28,9 @@ bool doHandeShake();
 bool opensslLabInit();
 bool dtlsTransInit();
 bool socketCreateSet();
+static int conn_output(void *addr, void *buf, size_t length, uint8_t tos, uint8_t set_df);
+static void *handle_packets(void *arg);
+static int receive_cb(struct socket *sock, union sctp_sockstore addr, void *data,size_t datalen, struct sctp_rcvinfo rcv, int flags, void *ulp_info);
 
 int main()
 {
@@ -42,6 +45,50 @@ int main()
     }
     std::cout<<"hand ok"<<std::endl;
 
+    usrsctp_init(0, conn_output, NULL);
+    usrsctp_sysctl_set_sctp_ecn_enable(0);
+    usrsctp_register_address((void *)&fd);
+
+    pthread_t tid;
+    pthread_create(&tid, NULL, &handle_packets, (void *)&fd);
+
+    struct socket *s;
+    if ((s = usrsctp_socket(AF_CONN, SOCK_STREAM, IPPROTO_SCTP, receive_cb, NULL, 0, &fd)) == NULL){
+        perror("usrsctp_socket");
+    }
+
+    struct sockaddr_conn sconn;
+    memset(&sconn, 0, sizeof(struct sockaddr_conn));
+    sconn.sconn_family = AF_CONN;
+    sconn.sconn_port = htons(0);
+    sconn.sconn_addr = NULL;
+    if (usrsctp_bind(s, (struct sockaddr *)&sconn, sizeof(struct sockaddr_conn)) < 0){
+        perror("usrsctp_bind");
+    }
+
+    memset(&sconn, 0, sizeof(struct sockaddr_conn));
+    sconn.sconn_family = AF_CONN;
+    sconn.sconn_port = htons(5001);
+    sconn.sconn_addr = &fd;
+    if (usrsctp_connect(s, (struct sockaddr *)&sconn, sizeof(struct sockaddr_conn)) < 0) {
+        perror("usrsctp_connect");
+    }
+
+    struct sctp_sndinfo sndinfo;
+    sndinfo.snd_sid = 1;
+    sndinfo.snd_flags = 0;
+    sndinfo.snd_ppid = htonl(0);
+    sndinfo.snd_context = 0;
+    sndinfo.snd_assoc_id = 0;
+    if (usrsctp_sendv(s, "hello world", strlen("hello world"), NULL, 0, (void *)&sndinfo,
+                            (socklen_t)sizeof(struct sctp_sndinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
+        perror("usrsctp_sendv");
+    }
+
+    usrsctp_shutdown(s, SHUT_WR);
+    while (usrsctp_finish() != 0) {
+        sleep(1);
+    }
     return 0;
 }
 
@@ -149,4 +196,49 @@ bool socketCreateSet()
     SetNonBlocking(fd);
 
     return true;
+}
+
+static int conn_output(void *addr, void *buf, size_t length, uint8_t tos, uint8_t set_df)
+{
+    int32_t *fdp = (int32_t *)addr;
+    (void)fdp;
+
+    if (buf > 0)
+    {
+        SSL_write(ssl, buf, length);
+        SendPendingDtls();
+    }
+}
+
+static void * handle_packets(void *arg)
+{
+    char buf[BUFF_LEN];
+    for (;;){
+        struct sockaddr_in remote;
+        socklen_t remoteLen = sizeof(remote);
+        int32_t length = recvfrom(fd, buf, BUFF_LEN, 0, (struct sockaddr*)&remote, &remoteLen);
+
+        if (length > 0){
+             BIO_write(inBio, buf, length);
+             while (BIO_ctrl_pending(inBio) > 0) {
+                 uint8_t receiveBuffer[8092];
+                 int bytes = SSL_read(ssl, receiveBuffer, sizeof(receiveBuffer));
+                 if (bytes > 0) {
+                     usrsctp_conninput(&fd, receiveBuffer, (size_t)bytes, 0);
+                 }
+             }
+        }
+    }
+}
+
+static int receive_cb(struct socket *sock, union sctp_sockstore addr, void *data,size_t datalen, struct sctp_rcvinfo rcv, int flags, void *ulp_info)
+{
+    if (data) {
+        std::cout<<data<<std::endl;
+        free(data);
+    }
+    else{
+        usrsctp_deregister_address(ulp_info);
+        usrsctp_close(sock);        
+    }
 }
