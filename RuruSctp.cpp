@@ -77,7 +77,7 @@ int32_t RuruSctp::OnSctpInboundPacket(struct socket* sock,
     RuruSctp* transport = static_cast<RuruSctp*>(ulp_info);
     (void)transport;
     if (data){
-        printf("===========:%s\n", (char *)data);
+        printf("recv data: %s\n", (char *)data);
         free(data);
     }
     return 0;

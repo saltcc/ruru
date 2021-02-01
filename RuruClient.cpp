@@ -48,7 +48,7 @@ void RuruClient::HandleDtlsPacket(const uint8_t *data, int32_t length)
             uint8_t buffer[4096];
             int bytes = SSL_read(dtlsTransport.ssl, buffer, sizeof(buffer));
             if (bytes > 0) {
-                sctpTransport.RecvUsrSctpData(data, length);
+                sctpTransport.RecvUsrSctpData(buffer, bytes);
             }
         }
     }
