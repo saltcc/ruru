@@ -1,5 +1,6 @@
 #include "RuruSctp.h"
 #include "RuruClient.h"
+#include "RuruEvent.h"
 
 enum PayloadProtocolIdentifier {
   PPID_NONE = 0,  // No protocol is specified.
@@ -66,6 +67,23 @@ int32_t RuruSctp::OnSctpOutboundPacket(void *addr, void *data, size_t length, ui
     return 0;
 }
 
+static void PushClientRecvData(RuruClient *client, const uint8_t *const data, size_t length, struct sctp_rcvinfo &rcv)
+{
+    if (client && client->que){
+        RuruEvent evt;
+        evt.client = client;
+        //
+        evt.data = nullptr;
+        evt.length = length;
+        evt.param.sid = rcv.rcv_sid;
+        evt.param.ssn = rcv.rcv_ssn;
+        evt.param.tsn = rcv.rcv_tsn;
+        evt.type = EVT_RecvClientData;
+        client->que->push(evt);
+    }
+    return;
+}
+
 int32_t RuruSctp::OnSctpInboundPacket(struct socket* sock,
                                 union sctp_sockstore addr,
                                 void* data,
@@ -75,9 +93,13 @@ int32_t RuruSctp::OnSctpInboundPacket(struct socket* sock,
                                 void* ulp_info)
 {
     RuruSctp* transport = static_cast<RuruSctp*>(ulp_info);
-    (void)transport;
+
     if (data){
-        printf("recv data: %s\n", (char *)data);
+
+        if (transport){
+            PushClientRecvData(transport->client, static_cast<uint8_t *>(data), length, rcv);
+        }
+
         free(data);
     }
     return 0;

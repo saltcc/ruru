@@ -37,6 +37,17 @@ void RuruLoop::Destory()
     }
 }
 
+bool RuruLoop::UpdateEvent(RuruEvent &evt)
+{
+    if (!que_.empty()){
+        evt = que_.front();
+        que_.pop();
+        return true;
+    }
+
+    return false;
+}
+
 int32_t RuruLoop::Loop()
 {
     RuruAddress address;

@@ -3,6 +3,8 @@
 #include "RuruDtls.h"
 #include "RuruSctp.h"
 #include "RuruNetwork.h"
+#include "RuruEvent.h"
+#include <queue>
 class RuruClient
 {
 public:
@@ -13,6 +15,7 @@ public:
     RuruSctp sctpTransport;
 
     RuruAddress address;
+    std::queue<RuruEvent> *que;
 
     void HandleDtlsPacket(const uint8_t *data, int32_t length);
     void ClientSendData(const uint8_t *data, int32_t length);
