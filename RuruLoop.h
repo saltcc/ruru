@@ -2,6 +2,7 @@
 
 #include "RuruClient.h"
 #include "RuruEvent.h"
+#include "RuruArena.h"
 #include <vector>
 #include <queue>
 
@@ -22,4 +23,7 @@ private:
     static RuruDtlsCtx dtsCtx_;
     RuruClient *FindClientByAddress(RuruAddress address);
     std::queue<RuruEvent> que_;
+    RuruArena arena_;
+
+    void AttachClientInfo(RuruClient *client);
 };

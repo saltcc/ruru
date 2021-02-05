@@ -21,7 +21,7 @@ struct RuruEvent
 {
     RuruEventType type = EVT_None;
     RuruClient *client = nullptr;
-    const uint8_t *data = nullptr;
+    uint8_t *data = nullptr;
     uint16_t length = 0;
     RuruDataParam param;
 };

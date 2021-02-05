@@ -54,6 +54,7 @@ int32_t RuruLoop::Loop()
     address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
     address.port = 8000;
     RuruClient *client = new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_);
+    AttachClientInfo(client);
     clientMgr_.push_back(client);
 
     while(1)
@@ -91,10 +92,16 @@ void RuruLoop::ClearAllClient()
 {
     for (std::vector<RuruClient *>::iterator it = clientMgr_.begin(); it != clientMgr_.end(); ++it){
         std::vector<RuruClient *>::iterator tmp = it;
-        if (*tmp != NULL){
+        if (*tmp != nullptr){
             delete *tmp;
         }
     }
     clientMgr_.clear();
 }
 
+
+void RuruLoop::AttachClientInfo(RuruClient *client)
+{
+    client->que = &this->que_;
+    client->arena = &this->arena_;
+}

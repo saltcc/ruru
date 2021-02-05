@@ -4,6 +4,7 @@
 #include "RuruSctp.h"
 #include "RuruNetwork.h"
 #include "RuruEvent.h"
+#include "RuruArena.h"
 #include <queue>
 class RuruClient
 {
@@ -16,6 +17,7 @@ public:
 
     RuruAddress address;
     std::queue<RuruEvent> *que;
+    RuruArena *arena;
 
     void HandleDtlsPacket(const uint8_t *data, int32_t length);
     void ClientSendData(const uint8_t *data, int32_t length);

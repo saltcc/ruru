@@ -72,8 +72,11 @@ static void PushClientRecvData(RuruClient *client, const uint8_t *const data, si
     if (client && client->que){
         RuruEvent evt;
         evt.client = client;
-        //
-        evt.data = nullptr;
+        evt.data = client->arena->ArenaAlloc(length);
+        if (!evt.data){
+            return;
+        }
+        memcpy(evt.data, data, length);
         evt.length = length;
         evt.param.sid = rcv.rcv_sid;
         evt.param.ssn = rcv.rcv_ssn;
