@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <iostream>
+#include <sys/epoll.h>
 
+static const int32_t MAX_EVENT = 1000;
 RuruDtlsCtx RuruLoop::dtsCtx_;
 
 RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
@@ -21,12 +23,36 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
         return;
     }
 
+    epfd_ = epoll_create1(0);
+    if (epfd_ < 0){
+        perror("RuruLoop epoll_create1");
+        Destory();
+        return;
+    }
+
+    struct epoll_event event;
+    event.data.fd = udpfd_;
+    if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, udpfd_, &event)){
+        perror("RuruLoop epoll_ctl");
+        Destory();
+    }
+    maxEvents_ = MAX_EVENT;
+    events_ = new epoll_event[maxEvents_];
+
     RuruSctp::UsrsctpStartInit();
+
+    //test TODO
+    RuruAddress address;
+    address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
+    address.port = 8000;
+    RuruClient *client = new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_);
+    AttachClientInfo(client);
+    clientMgr_.push_back(client);
 }
 
 RuruLoop::~RuruLoop()
 {
-    ClearAllClient();
+    Destory();
 }
 
 void RuruLoop::Destory()
@@ -35,46 +61,73 @@ void RuruLoop::Destory()
         close(udpfd_);
         udpfd_ = -1;
     }
+
+    if (events_){
+        delete []events_;
+        events_ = nullptr;
+    }
+
+    ClearAllClient();
 }
 
 bool RuruLoop::UpdateEvent(RuruEvent &evt)
 {
+    bool bHaveData = false;
+
     if (!que_.empty()){
         evt = que_.front();
         que_.pop();
-        return true;
+        bHaveData = true;
+        return bHaveData;
     }
 
-    return false;
+    arena_.ArenaReset();
+
+    return bHaveData;
 }
 
-int32_t RuruLoop::Loop()
+bool RuruLoop::EpollWait()
 {
-    RuruAddress address;
-    address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
-    address.port = 8000;
-    RuruClient *client = new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_);
-    AttachClientInfo(client);
-    clientMgr_.push_back(client);
+    bool bHaveData = false;
 
-    while(1)
-    {
-        struct sockaddr_in remote;
-        socklen_t remoteLen = sizeof(remote);
+    int32_t num = epoll_wait(epfd_, events_, MAX_EVENT, 0);
+    for (int32_t i = 0; i < num; i++) {
+        struct epoll_event* e = &events_[i];
+        if (e->data.fd == udpfd_){
+            struct sockaddr_in remote;
+            socklen_t remoteLen = sizeof(remote);
+            ssize_t bytes = 0;
+            uint8_t buffer[4096];
+            while((bytes = recvfrom(udpfd_, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &remoteLen)) > 0){
+                RuruAddress address;
+                address.host = ntohl(remote.sin_addr.s_addr);
+                address.port = ntohs(remote.sin_port);
+                RuruClient *client = FindClientByAddress(address);
+                if (client){
+                    client->HandleDtlsPacket(buffer, bytes);
+                }
 
-        ssize_t bytes = 0;
-        uint8_t buffer[4096];
-        while((bytes = recvfrom(udpfd_, buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &remoteLen)) > 0){
-            RuruAddress address;
-            address.host = ntohl(remote.sin_addr.s_addr);
-            address.port = ntohs(remote.sin_port);
-
-            RuruClient *client = FindClientByAddress(address);
-            if (client){
-                client->HandleDtlsPacket(buffer, bytes);
+                bHaveData = true;
             }
         }
     }
+
+    return bHaveData;
+}
+
+bool RuruLoop::Loop(RuruEvent &evt)
+{
+ 
+    bool bHaveData = false;
+
+    if (UpdateEvent(evt)){
+        bHaveData = true;
+        return bHaveData;
+    }
+
+    bHaveData |= EpollWait();
+
+    return bHaveData;
 }
 
 RuruClient *RuruLoop::FindClientByAddress(RuruAddress address)
