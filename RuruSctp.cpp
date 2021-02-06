@@ -178,9 +178,26 @@ void RuruSctp::UsrsctpUnInit()
     }
 }
 
-int32_t RuruSctp::SendUsrSctpData(const uint8_t *data, int32_t length)
+bool RuruSctp::SendUsrSctpData(RuruSctpMessage *sctpMsg)
 {
-    return length;
+    if (sctpMsg && bHandShakeDone){
+        struct sctp_sndinfo info;
+        memset(&info, 0, sizeof info);
+        info.snd_sid = sctpMsg->sid;
+        info.snd_flags = SCTP_EOR;
+        info.snd_ppid = htonl(sctpMsg->ppid);
+
+        if (usrsctp_sendv(sock_, sctpMsg->data, sctpMsg->len, NULL, 0, &info, sizeof(info), SCTP_SENDV_SNDINFO, 0) < 0) {
+            perror("usrsctp_sendv");
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                //add to queue
+            }
+
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void RuruSctp::RecvUsrSctpData(const uint8_t *data, int32_t length)

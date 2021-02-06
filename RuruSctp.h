@@ -2,6 +2,13 @@
 
 #include "usrsctp.h"
 
+struct RuruSctpMessage {
+    void *data = nullptr;
+    size_t len = 0;
+    uint16_t sid = 0;
+    uint32_t ppid = 0;
+};
+
 class RuruClient;
 
 class RuruSctp
@@ -14,7 +21,7 @@ public:
     bool bHandShakeDone;
 
     static void UsrsctpStartInit();
-    int32_t SendUsrSctpData(const uint8_t *data, int32_t length);
+    bool SendUsrSctpData(RuruSctpMessage *sctpMsg);
     void RecvUsrSctpData(const uint8_t *data, int32_t length);
     RuruClient *client;
     bool OpenSctp();

@@ -74,15 +74,19 @@ int main()
         perror("usrsctp_connect");
     }
 
-    struct sctp_sndinfo sndinfo;
-    sndinfo.snd_sid = 1;
-    sndinfo.snd_flags = 0;
-    sndinfo.snd_ppid = htonl(0);
-    sndinfo.snd_context = 0;
-    sndinfo.snd_assoc_id = 0;
-    if (usrsctp_sendv(s, "hello world", strlen("hello world"), NULL, 0, (void *)&sndinfo,
-                            (socklen_t)sizeof(struct sctp_sndinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
-        perror("usrsctp_sendv");
+    while(1)
+    {
+        struct sctp_sndinfo sndinfo;
+        sndinfo.snd_sid = 1;
+        sndinfo.snd_flags = 0;
+        sndinfo.snd_ppid = htonl(0);
+        sndinfo.snd_context = 0;
+        sndinfo.snd_assoc_id = 0;
+        if (usrsctp_sendv(s, "hello world", strlen("hello world"), NULL, 0, (void *)&sndinfo,
+                                (socklen_t)sizeof(struct sctp_sndinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
+            perror("usrsctp_sendv");
+        }
+        sleep(1);
     }
 
     usrsctp_shutdown(s, SHUT_WR);
@@ -234,7 +238,7 @@ static void * handle_packets(void *arg)
 static int receive_cb(struct socket *sock, union sctp_sockstore addr, void *data,size_t datalen, struct sctp_rcvinfo rcv, int flags, void *ulp_info)
 {
     if (data) {
-        std::cout<<data<<std::endl;
+        std::cout<<std::string(static_cast<char *>(data), datalen)<<std::endl;
         free(data);
     }
     else{
