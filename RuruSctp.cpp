@@ -178,19 +178,67 @@ void RuruSctp::UsrsctpUnInit()
     }
 }
 
+void RuruSctp::PushMsg2ClientCache(RuruSctpMessage *msg)
+{
+    RuruCacheData *cacheData = new RuruCacheData;
+    cacheData->param = msg->param;
+    cacheData->data = new uint8_t[msg->len];
+    memcpy(cacheData->data, msg->data, msg->len);
+    cacheData->length = msg->len;
+
+    client->cache.push(cacheData);
+}
+
+void RuruSctp::SendSctpCacheData()
+{
+    if (!bHandShakeDone){
+        return;
+    }
+
+    while (!client->cache.empty()){
+        RuruCacheData *sendData = client->cache.front();
+        struct sctp_sndinfo info;
+        memset(&info, 0, sizeof info);
+        info.snd_sid = sendData->param.sid;
+        info.snd_flags = SCTP_EOR;
+        info.snd_ppid = htonl(sendData->param.ppid);
+        if (usrsctp_sendv(sock_, sendData->data, sendData->length, NULL, 0, &info, sizeof(info), SCTP_SENDV_SNDINFO, 0) < 0){
+            perror("usrsctp_sendv");
+            if (errno != EWOULDBLOCK && errno != EAGAIN){
+                usrsctp_close(sock_);
+                bHandShakeDone = false;
+                return;
+            }
+        }
+        else
+        {
+            client->cache.pop();
+            delete sendData;
+            sendData = nullptr;
+        }
+    }
+}
+
 bool RuruSctp::SendUsrSctpData(RuruSctpMessage *sctpMsg)
 {
+    SendSctpCacheData();
+
     if (sctpMsg && bHandShakeDone){
         struct sctp_sndinfo info;
         memset(&info, 0, sizeof info);
-        info.snd_sid = sctpMsg->sid;
+        info.snd_sid = sctpMsg->param.sid;
         info.snd_flags = SCTP_EOR;
-        info.snd_ppid = htonl(sctpMsg->ppid);
+        info.snd_ppid = htonl(sctpMsg->param.ppid);
 
         if (usrsctp_sendv(sock_, sctpMsg->data, sctpMsg->len, NULL, 0, &info, sizeof(info), SCTP_SENDV_SNDINFO, 0) < 0) {
             perror("usrsctp_sendv");
             if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                //add to queue
+                PushMsg2ClientCache(sctpMsg);
+            }
+            else
+            {
+                usrsctp_close(sock_);
+                bHandShakeDone = false;
             }
 
             return false;

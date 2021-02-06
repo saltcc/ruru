@@ -45,9 +45,9 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
     RuruAddress address;
     address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
     address.port = 8000;
-    RuruClient *client = new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_);
-    AttachClientInfo(client);
-    clientMgr_.push_back(client);
+    std::unique_ptr<RuruClient> client(new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_));
+    AttachClientInfo(client.get());
+    clientMgr_.push_back(std::move(client));
 }
 
 RuruLoop::~RuruLoop()
@@ -66,8 +66,6 @@ void RuruLoop::Destory()
         delete []events_;
         events_ = nullptr;
     }
-
-    ClearAllClient();
 }
 
 bool RuruLoop::UpdateEvent(RuruEvent &evt)
@@ -124,7 +122,7 @@ bool RuruLoop::Loop(RuruEvent &evt)
         bHaveData = true;
         return bHaveData;
     }
-
+    bHaveData |= ScanClientCacheData();
     bHaveData |= EpollWait();
 
     return bHaveData;
@@ -132,8 +130,8 @@ bool RuruLoop::Loop(RuruEvent &evt)
 
 RuruClient *RuruLoop::FindClientByAddress(RuruAddress address)
 {
-    for (std::vector<RuruClient *>::iterator it = clientMgr_.begin(); it != clientMgr_.end(); ++it){
-        RuruClient *client = *it;
+    for (std::vector<std::unique_ptr<RuruClient>>::iterator it = clientMgr_.begin(); it != clientMgr_.end(); ++it){
+        RuruClient *client = (*it).get();
         if (client->address.host == address.host && client->address.port == address.port){
             return client;
         }
@@ -141,20 +139,31 @@ RuruClient *RuruLoop::FindClientByAddress(RuruAddress address)
     return nullptr;
 }
 
-void RuruLoop::ClearAllClient()
-{
-    for (std::vector<RuruClient *>::iterator it = clientMgr_.begin(); it != clientMgr_.end(); ++it){
-        std::vector<RuruClient *>::iterator tmp = it;
-        if (*tmp != nullptr){
-            delete *tmp;
-        }
-    }
-    clientMgr_.clear();
-}
-
-
 void RuruLoop::AttachClientInfo(RuruClient *client)
 {
     client->que = &this->que_;
     client->arena = &this->arena_;
+}
+
+bool RuruLoop::ScanClientCacheData()
+{
+    int32_t bHaveData = false;
+    static int32_t count = 0;
+    static int32_t roll = 100;
+    if (count++ % roll != 0){
+        return bHaveData;
+    }
+
+    for (std::vector<std::unique_ptr<RuruClient>>::iterator it = clientMgr_.begin(); it != clientMgr_.end(); ++it){
+        RuruClient *client = (*it).get();
+        if (client && !client->cache.empty()){
+            RuruEvent evt;
+            evt.client = client;
+            evt.type = EVT_SendCacheData;
+            client->que->push(evt);
+            bHaveData = true;
+        }
+    }
+
+    return bHaveData;
 }

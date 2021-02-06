@@ -1,15 +1,37 @@
 #pragma once
 
 #include "usrsctp.h"
+#include <memory>
 
-struct RuruSctpMessage {
-    void *data = nullptr;
-    size_t len = 0;
+struct SctpMsgParam{
     uint16_t sid = 0;
     uint32_t ppid = 0;
 };
 
+struct RuruSctpMessage {
+    void *data = nullptr;
+    size_t len = 0;
+    SctpMsgParam param;
+};
+
 class RuruClient;
+
+struct RuruCacheData
+{
+    RuruCacheData(){
+        data = nullptr;
+        length = 0;
+    }
+    ~RuruCacheData(){
+        if (data){
+            delete []data;
+            data = nullptr;
+        }
+    }
+    SctpMsgParam param;
+    uint8_t *data;
+    int32_t length;
+};
 
 class RuruSctp
 {
@@ -23,6 +45,7 @@ public:
     static void UsrsctpStartInit();
     bool SendUsrSctpData(RuruSctpMessage *sctpMsg);
     void RecvUsrSctpData(const uint8_t *data, int32_t length);
+    void SendSctpCacheData();
     RuruClient *client;
     bool OpenSctp();
 
@@ -32,6 +55,7 @@ private:
     static void UsrsctpUnInit();
     bool ConfigureSctpSocket();
     void CloseSctpSocket();
+    void PushMsg2ClientCache(RuruSctpMessage *msg);
     static bool usrsctpInit_;
     struct socket *sock_;
 };

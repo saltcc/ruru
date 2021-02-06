@@ -5,6 +5,7 @@
 #include "RuruArena.h"
 #include <vector>
 #include <queue>
+#include <memory>
 
 class RuruLoop
 {
@@ -16,7 +17,7 @@ public:
 
 private:
     int32_t udpfd_;
-    std::vector<RuruClient *> clientMgr_;
+    std::vector<std::unique_ptr<RuruClient>> clientMgr_;
     static RuruDtlsCtx dtsCtx_;
     std::queue<RuruEvent> que_;
     RuruArena arena_;
@@ -27,7 +28,7 @@ private:
     void AttachClientInfo(RuruClient *client);
     bool UpdateEvent(RuruEvent &evt);
     bool EpollWait();
-    void ClearAllClient();
     RuruClient *FindClientByAddress(RuruAddress address);
     void Destory();
+    bool ScanClientCacheData();
 };

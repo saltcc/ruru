@@ -1,16 +1,26 @@
 #include <stdio.h>
 #include "../RuruLoop.h"
 
-void Echo2Client(RuruEvent &evt){
+void Echo2Client(RuruEvent &evt)
+{
     RuruClient *client = evt.client;
 
     RuruSctpMessage msg;
     msg.data = evt.data;
     msg.len = evt.length;
-    msg.sid = evt.param.sid;
-    msg.ppid = 0;
+    msg.param.sid = evt.param.sid;
+    msg.param.ppid = 0;
     
     client->sctpTransport.SendUsrSctpData(&msg);
+}
+
+void SendClientCacheData(RuruEvent &evt)
+{
+    if (evt.client){
+        evt.client->sctpTransport.SendSctpCacheData();
+    }
+
+    return;
 }
 
 int main()
@@ -30,6 +40,7 @@ int main()
                     Echo2Client(evt);
                     break;
                 case EVT_SendCacheData:
+                    SendClientCacheData(evt);
                     break;
                 default:
                     break;
