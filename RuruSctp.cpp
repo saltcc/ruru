@@ -56,13 +56,25 @@ RuruSctp::~RuruSctp()
 
 int32_t RuruSctp::OnSctpOutboundPacket(void *addr, void *data, size_t length, uint8_t tos, uint8_t set_df)
 {
-    if (!data){
+    if (!data || length < sizeof(SctpHeader)){
         return 0;
     }
 
     RuruSctp *transport = (RuruSctp *)addr;
     if (transport->client){
-        transport->client->ClientSendData((uint8_t *)data, length);
+        SctpHeader *header = (SctpHeader *)data;
+        if (header->chunktype == 4 || header->chunktype == 5){
+            HeartBeatData beat;
+            memcpy(beat.data, data, length);
+            beat.length = length;
+            transport->client->heartBeatRing.RingBufWrite(beat);
+            RuruEvent evt;
+            evt.type = EVT_HeartBeat;
+            evt.client = transport->client;
+            transport->client->que->push(evt);
+        }else{
+            transport->client->ClientSendData((uint8_t *)data, length);
+        }
     }
     return 0;
 }

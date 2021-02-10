@@ -5,8 +5,16 @@
 #include "RuruNetwork.h"
 #include "RuruEvent.h"
 #include "RuruArena.h"
+#include "RuruRingBuf.h"
 #include <queue>
 #include <memory>
+
+struct HeartBeatData
+{
+    uint8_t data[1024];
+    uint16_t length;
+};
+
 class RuruClient
 {
 public:
@@ -15,6 +23,7 @@ public:
 
     RuruDtls dtlsTransport;
     RuruSctp sctpTransport;
+    RuruRingBuf<HeartBeatData> heartBeatRing;
 
     RuruAddress address;
     std::queue<RuruEvent> *que;
@@ -23,6 +32,7 @@ public:
 
     void HandleDtlsPacket(const uint8_t *data, int32_t length);
     void ClientSendData(const uint8_t *data, int32_t length);
+    void ClientSendHeartBeatData();
 private:
     void ClientSendPendingDtls();
     int32_t udpfd_;

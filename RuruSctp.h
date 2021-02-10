@@ -3,6 +3,16 @@
 #include "usrsctp.h"
 #include <memory>
 
+struct SctpHeader{
+    uint16_t srcport;
+    uint16_t dstport;
+    uint32_t vertag;
+    uint32_t checksum;
+    uint8_t chunktype;
+    uint8_t chunkflag;
+    uint16_t chunklen;
+};
+
 struct SctpMsgParam{
     uint16_t sid = 0;
     uint32_t ppid = 0;

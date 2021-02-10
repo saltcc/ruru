@@ -86,7 +86,7 @@ int main()
                                 (socklen_t)sizeof(struct sctp_sndinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
             perror("usrsctp_sendv");
         }
-        sleep(1);
+        sleep(1000);
     }
 
     usrsctp_shutdown(s, SHUT_WR);

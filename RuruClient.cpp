@@ -1,6 +1,6 @@
 #include "RuruClient.h"
 
-RuruClient::RuruClient(RuruDtlsCtx *ctx, RuruAddress address, int32_t fd):dtlsTransport(ctx),sctpTransport(this)
+RuruClient::RuruClient(RuruDtlsCtx *ctx, RuruAddress address, int32_t fd):dtlsTransport(ctx),sctpTransport(this),heartBeatRing(100)
 {
     udpfd_ = fd;
     this->address = address;
@@ -59,5 +59,14 @@ void RuruClient::ClientSendData(const uint8_t *data, int32_t length)
     if (dtlsTransport.bHandShakeDone){
         SSL_write(dtlsTransport.ssl, data, length);
         ClientSendPendingDtls();
+    }
+}
+
+void RuruClient::ClientSendHeartBeatData()
+{
+    while (!heartBeatRing.RingBufEmpty()){
+        HeartBeatData beat;
+        heartBeatRing.RingBufRead(beat);
+        ClientSendData((uint8_t *)beat.data, beat.length);
     }
 }

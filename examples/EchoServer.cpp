@@ -23,6 +23,13 @@ void SendClientCacheData(RuruEvent &evt)
     return;
 }
 
+void SendHeartBeat(RuruEvent &evt)
+{
+    if (evt.client){
+        evt.client->ClientSendHeartBeatData();
+    }
+}
+
 int main()
 {
     const uint8_t *ip = (uint8_t *)"192.168.28.128";
@@ -34,6 +41,8 @@ int main()
         while (ruru.Loop(evt)){
             switch (evt.type){
                 case EVT_HeartBeat:
+                    SendHeartBeat(evt);
+                    printf("send heart beat\n");
                     break;
                 case EVT_RecvClientData:
                     printf("recv data : %s\n", evt.data);
