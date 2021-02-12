@@ -7,6 +7,14 @@
 #include <queue>
 #include <memory>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "picohttpparser.h"
+#ifdef __cplusplus
+}
+#endif
+
 class RuruLoop
 {
 public:

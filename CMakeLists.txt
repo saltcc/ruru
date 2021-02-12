@@ -5,6 +5,7 @@ option(WITH_TESTS "Build tests" OFF)
 set(EXAMPLES_DIR ${CMAKE_CURRENT_BINARY_DIR}/examples)
 
 add_library(ruru
+    picohttpparser.c
     RuruArena.cpp
     RuruRingBuf.cpp
     RuruCert.cpp
