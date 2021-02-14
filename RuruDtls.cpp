@@ -1,5 +1,6 @@
 #include "RuruDtls.h"
 #include "RuruCert.h"
+#include <string.h>
 
 RuruDtlsCtx::RuruDtlsCtx()
 {
@@ -9,7 +10,7 @@ RuruDtlsCtx::RuruDtlsCtx()
     ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
 
-    ctx = SSL_CTX_new(DTLSv1_method());
+    ctx = SSL_CTX_new(DTLS_method());
     if (ctx == nullptr){
         ERR_print_errors_fp(stderr);
         return;
