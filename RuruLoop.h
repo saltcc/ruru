@@ -25,6 +25,7 @@ public:
 
 private:
     int32_t udpfd_;
+    int32_t tcpfd_;
     std::vector<std::unique_ptr<RuruClient>> clientMgr_;
     static RuruDtlsCtx dtsCtx_;
     std::queue<RuruEvent> que_;

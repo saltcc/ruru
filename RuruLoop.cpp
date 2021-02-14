@@ -18,9 +18,23 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
 
     int32_t ret = SetNonBlocking(udpfd_);
     if (ret < 0){
-        perror("RuruLoop SetNonBlocking");
+        perror("RuruLoop udp SetNonBlocking");
         Destory();
         return;
+    }
+
+    tcpfd_ = CreateTcpSocket("192.168.1.1","8888");
+    if (tcpfd_ < 0){
+        perror("RuruLoop CreateTcpSocket");
+        Destory();
+        return;
+    }
+
+    ret = SetNonBlocking(tcpfd_);
+    if (ret < 0){
+        perror("RuruLoop tcp SetNonBlocking");
+        Destory();
+        return;        
     }
 
     epfd_ = epoll_create1(0);
@@ -33,9 +47,18 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
     struct epoll_event event;
     event.data.fd = udpfd_;
     if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, udpfd_, &event)){
-        perror("RuruLoop epoll_ctl");
+        perror("RuruLoop udp epoll_ctl");
         Destory();
+        return;
     }
+
+    event.data.fd = tcpfd_;
+    if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, tcpfd_, &event)){
+        perror("RuruLoop tcp epoll_ctl");
+        Destory();
+        return;
+    }    
+
     maxEvents_ = MAX_EVENT;
     events_ = new epoll_event[maxEvents_];
 
@@ -60,6 +83,11 @@ void RuruLoop::Destory()
     if (udpfd_ > 0){
         close(udpfd_);
         udpfd_ = -1;
+    }
+
+    if (tcpfd_ > 0){
+        close(tcpfd_);
+        tcpfd_ = -1;
     }
 
     if (events_){
