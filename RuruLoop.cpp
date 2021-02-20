@@ -8,7 +8,7 @@
 static const int32_t MAX_EVENT = 1000;
 RuruDtlsCtx RuruLoop::dtsCtx_;
 
-RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
+RuruLoop::RuruLoop(const char *host, const char *port)
 {
     udpfd_ = CreateUdpSocket(host, port);
     if (udpfd_ < 0){
@@ -23,7 +23,7 @@ RuruLoop::RuruLoop(const uint8_t *host, const uint8_t *port)
         return;
     }
 
-    tcpfd_ = CreateTcpSocket("192.168.1.1","8888");
+    tcpfd_ = CreateTcpSocket(host, port);
     if (tcpfd_ < 0){
         perror("RuruLoop CreateTcpSocket");
         Destory();

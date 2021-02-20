@@ -18,7 +18,7 @@ extern "C" {
 class RuruLoop
 {
 public:
-    RuruLoop(const uint8_t *host, const uint8_t *port);
+    RuruLoop(const char *host, const char *port);
     ~RuruLoop();
 
     bool Loop(RuruEvent &evt);

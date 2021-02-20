@@ -69,7 +69,7 @@ int32_t CreateTcpSocket(const char *host, const char *port)
     return fd;
 }
 
-int32_t CreateUdpSocket(const uint8_t *host, const uint8_t *port)
+int32_t CreateUdpSocket(const char *host, const char *port)
 {
     struct sockaddr_in svr_addr;
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -77,8 +77,8 @@ int32_t CreateUdpSocket(const uint8_t *host, const uint8_t *port)
         return -1;
     }
     svr_addr.sin_family = AF_INET;
-    svr_addr.sin_port = htons(9999);
-    svr_addr.sin_addr.s_addr = inet_addr("192.168.28.128");
+    svr_addr.sin_port = htons(atoi(port));
+    svr_addr.sin_addr.s_addr = inet_addr(host);
     if (bind(fd, (struct sockaddr*)&svr_addr, sizeof(svr_addr)) < 0){
         return -1;
     }
