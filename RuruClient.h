@@ -15,6 +15,13 @@ struct HeartBeatData
     uint16_t length;
 };
 
+struct RuruConnectionData
+{
+    int32_t fd = -1;
+    uint8_t data[4096] = {0};
+    int32_t length = 0;
+};
+
 class RuruClient
 {
 public:

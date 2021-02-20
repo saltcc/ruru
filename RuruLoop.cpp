@@ -45,14 +45,21 @@ RuruLoop::RuruLoop(const char *host, const char *port)
     }
 
     struct epoll_event event;
-    event.data.fd = udpfd_;
+    // memset(&event, 0, sizeof(event));
+    RuruConnectionData *ucon = new RuruConnectionData;
+    ucon->fd = udpfd_;
+    event.data.ptr = ucon;
     if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, udpfd_, &event)){
         perror("RuruLoop udp epoll_ctl");
         Destory();
         return;
     }
 
-    event.data.fd = tcpfd_;
+    RuruConnectionData *con = new RuruConnectionData;
+    con->fd = tcpfd_;
+    // memset(&event, 0, sizeof(event));
+    event.data.ptr = con;
+    event.events = EPOLLIN | EPOLLET;
     if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, tcpfd_, &event)){
         perror("RuruLoop tcp epoll_ctl");
         Destory();
@@ -66,7 +73,7 @@ RuruLoop::RuruLoop(const char *host, const char *port)
 
     //test TODO
     RuruAddress address;
-    address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
+    address.host = ntohl((uint32_t)inet_addr("192.168.58.129"));
     address.port = 8000;
     std::unique_ptr<RuruClient> client(new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_));
     AttachClientInfo(client.get());
@@ -119,7 +126,16 @@ bool RuruLoop::EpollWait()
     int32_t num = epoll_wait(epfd_, events_, MAX_EVENT, 0);
     for (int32_t i = 0; i < num; i++) {
         struct epoll_event* e = &events_[i];
-        if (e->data.fd == udpfd_){
+        RuruConnectionData *con = static_cast<RuruConnectionData *>(e->data.ptr);
+
+        // if ((e->events & EPOLLERR) || (e->events & EPOLLHUP) || (!(e->events & EPOLLIN))) {
+        //     close(con->fd);
+        //     delete con;
+        //     con = NULL;                                                   
+        //     continue;
+        // }
+
+        if (con->fd == udpfd_){
             struct sockaddr_in remote;
             socklen_t remoteLen = sizeof(remote);
             ssize_t bytes = 0;
@@ -136,6 +152,44 @@ bool RuruLoop::EpollWait()
                 bHaveData = true;
             }
         }
+        else if (con->fd == tcpfd_){
+            for (;;) {
+                struct sockaddr_in saddr;
+                socklen_t addlen = sizeof(saddr);
+
+                int cfd = accept(tcpfd_, (struct sockaddr*)&saddr, &addlen);
+                if (cfd == -1) {
+                    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                        perror("accept");
+                    }
+                    break;
+                }
+
+                if (SetNonBlocking(cfd) == -1) {
+                    close(cfd);
+                    perror("client cfd SetNonBlocking");
+                    continue;
+                }
+
+                RuruConnectionData* con = new RuruConnectionData;
+
+                if (con) {
+                    con->fd = cfd;
+                    struct epoll_event event;
+                    event.events = EPOLLIN | EPOLLET;
+                    event.data.ptr = con;
+                    if (epoll_ctl(epfd_, EPOLL_CTL_ADD, cfd, &event) == -1) {
+                        close(cfd);
+                        perror("client cfd epoll_ctl");
+                    }
+                } else {
+                    close(cfd);
+                }
+            }            
+        }
+        else{
+
+        }    
     }
 
     return bHaveData;
