@@ -37,6 +37,13 @@ RuruLoop::RuruLoop(const char *host, const char *port)
         return;        
     }
 
+    ret = listen(tcpfd_, SOMAXCONN);
+    if (ret < 0){
+        perror("RuruLoop tcp listen");
+        Destory();
+        return;
+    }
+
     epfd_ = epoll_create1(0);
     if (epfd_ < 0){
         perror("RuruLoop epoll_create1");
@@ -45,10 +52,11 @@ RuruLoop::RuruLoop(const char *host, const char *port)
     }
 
     struct epoll_event event;
-    // memset(&event, 0, sizeof(event));
+    memset(&event, 0, sizeof(event));
     RuruConnectionData *ucon = new RuruConnectionData;
     ucon->fd = udpfd_;
     event.data.ptr = ucon;
+    event.events = EPOLLIN | EPOLLET;
     if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, udpfd_, &event)){
         perror("RuruLoop udp epoll_ctl");
         Destory();
@@ -57,14 +65,14 @@ RuruLoop::RuruLoop(const char *host, const char *port)
 
     RuruConnectionData *con = new RuruConnectionData;
     con->fd = tcpfd_;
-    // memset(&event, 0, sizeof(event));
+    memset(&event, 0, sizeof(event));
     event.data.ptr = con;
     event.events = EPOLLIN | EPOLLET;
     if (-1 == epoll_ctl(epfd_, EPOLL_CTL_ADD, tcpfd_, &event)){
         perror("RuruLoop tcp epoll_ctl");
         Destory();
         return;
-    }    
+    }
 
     maxEvents_ = MAX_EVENT;
     events_ = new epoll_event[maxEvents_];
@@ -73,7 +81,7 @@ RuruLoop::RuruLoop(const char *host, const char *port)
 
     //test TODO
     RuruAddress address;
-    address.host = ntohl((uint32_t)inet_addr("192.168.58.129"));
+    address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
     address.port = 8000;
     std::unique_ptr<RuruClient> client(new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_));
     AttachClientInfo(client.get());
@@ -128,12 +136,12 @@ bool RuruLoop::EpollWait()
         struct epoll_event* e = &events_[i];
         RuruConnectionData *con = static_cast<RuruConnectionData *>(e->data.ptr);
 
-        // if ((e->events & EPOLLERR) || (e->events & EPOLLHUP) || (!(e->events & EPOLLIN))) {
-        //     close(con->fd);
-        //     delete con;
-        //     con = NULL;                                                   
-        //     continue;
-        // }
+        if ((e->events & EPOLLERR) || (e->events & EPOLLHUP) || (!(e->events & EPOLLIN))) {
+            close(con->fd);
+            delete con;
+            con = NULL;
+            continue;
+        }
 
         if (con->fd == udpfd_){
             struct sockaddr_in remote;

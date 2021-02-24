@@ -177,7 +177,7 @@ bool socketCreateSet()
 {
     memset(&ser_addr, 0, sizeof(ser_addr));
     ser_addr.sin_family = AF_INET;
-    ser_addr.sin_addr.s_addr = inet_addr("192.168.58.129");
+    ser_addr.sin_addr.s_addr = inet_addr("192.168.28.128");
     ser_addr.sin_port = htons(9999);
 
     if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -189,7 +189,7 @@ bool socketCreateSet()
     struct sockaddr_in cli_addr;
     cli_addr.sin_family = AF_INET;
     cli_addr.sin_port = htons(8000);
-    cli_addr.sin_addr.s_addr = inet_addr("192.168.58.129");
+    cli_addr.sin_addr.s_addr = inet_addr("192.168.28.128");
     int32_t ret = bind(fd, (struct sockaddr* )&cli_addr, sizeof(struct sockaddr_in));
     if (ret < 0)
     {

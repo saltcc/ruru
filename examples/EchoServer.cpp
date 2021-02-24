@@ -32,7 +32,7 @@ void SendHeartBeat(RuruEvent &evt)
 
 int main()
 {
-    const char *ip = "192.168.58.129";
+    const char *ip = "192.168.28.128";
     const char *port = "9999";
     RuruLoop ruru(ip, port);
 
