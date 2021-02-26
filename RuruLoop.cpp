@@ -193,10 +193,12 @@ bool RuruLoop::EpollWait()
                 } else {
                     close(cfd);
                 }
-            }            
+            }
+            bHaveData = true;
         }
         else{
-
+            HttpRequestHandle(con);
+            bHaveData = true;
         }    
     }
 
@@ -256,4 +258,64 @@ bool RuruLoop::ScanClientCacheData()
     }
 
     return bHaveData;
+}
+
+void RuruLoop::HttpRequestHandle(RuruConnectionData* con)
+{
+    static const size_t HTTP_MAX_SIZE = 4096;
+    static const char *HTTP_BAD_REQUEST = "HTTP/1.1 400 Bad request\r\n\r\n";
+
+    for (;;){
+        ssize_t length = read(con->fd, con->data + con->length, HTTP_MAX_SIZE - con->length);
+
+        if ((length < 0 && errno != EAGAIN) || length == 0){
+            close(con->fd);
+            delete con;
+            return;
+        }
+
+        size_t lastLen = con->length;
+        con->length += length;
+
+        const char *method = NULL;
+        size_t methodLen = 0;
+        const char *path = NULL;
+        size_t pathLen = 0;
+        int32_t minorVersion = 0;
+        size_t numHeaders = 0;
+        struct phr_header headers[16];
+
+        int32_t status = phr_parse_request((const char *)con->data, con->length, 
+                                &method, &methodLen, &path, &pathLen,
+                                &minorVersion, headers, &numHeaders, lastLen);
+        if (status > 0) {
+            size_t contentLength = 0;
+            for (size_t i = 0; i < numHeaders; i++) {
+                if ((headers[i].name_len == strlen("content-length")) && 
+                    (0 == strncasecmp(headers[i].name, "content-length", strlen("content-length")))){
+                    contentLength = atoi(headers[i].value);
+                    break;
+                }
+            }
+            if (contentLength > 0){
+                if (con->length == status + static_cast<int32_t>(contentLength)) {
+                    //body parse
+                    std::cout<<(const char *)(con->data + status)<<std::endl;
+                }
+            }
+        }
+        else if (status == -1){
+            close(con->fd);
+            delete con;
+            return;
+        }
+        else{
+            if (con->length == HTTP_MAX_SIZE){
+                SocketWrite(con->fd, (const uint8_t *)(HTTP_BAD_REQUEST), strlen(HTTP_BAD_REQUEST));
+                close(con->fd);
+                delete con;
+                return;
+            }
+        }
+    }
 }

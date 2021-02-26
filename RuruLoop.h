@@ -40,4 +40,5 @@ private:
     RuruClient *FindClientByAddress(RuruAddress address);
     void Destory();
     bool ScanClientCacheData();
+    void HttpRequestHandle(RuruConnectionData* con);
 };

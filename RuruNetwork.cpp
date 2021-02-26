@@ -107,9 +107,31 @@ uint32_t Ip2Host(const char *ip)
 {
     return ntohl(inet_addr(ip));
 }
+
 const char *Host2Ip(uint32_t host)
 {
     struct in_addr addr;
     addr.s_addr = htonl(host);
     return inet_ntoa(addr);
+}
+
+ssize_t SocketWrite(int fd, const uint8_t* buf, size_t len)
+{
+    const ssize_t toWrite = (ssize_t)len;
+    ssize_t written = 0;
+    while (written != toWrite) {
+        ssize_t r = write(fd, buf + written, toWrite - written);
+
+        if (r == 0){
+            return written;
+        }
+
+        if (r == -1) {
+            return -1;
+        }
+
+        written += r;
+    }
+
+    return written;
 }
