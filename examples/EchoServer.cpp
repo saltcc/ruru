@@ -30,10 +30,14 @@ void SendHeartBeat(RuruEvent &evt)
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    const char *ip = "192.168.28.128";
-    const char *port = "9999";
+    if (argc <= 2){
+        std::cerr<<"./EchoServer localip lostport"<<std::endl;
+        return 0;
+    }
+    const char *ip = argv[1];
+    const char *port = argv[2];
     RuruLoop ruru(ip, port);
 
     for (;;){

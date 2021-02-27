@@ -78,14 +78,6 @@ RuruLoop::RuruLoop(const char *host, const char *port)
     events_ = new epoll_event[maxEvents_];
 
     RuruSctp::UsrsctpStartInit();
-
-    //test TODO
-    RuruAddress address;
-    address.host = ntohl((uint32_t)inet_addr("192.168.28.128"));
-    address.port = 8000;
-    std::unique_ptr<RuruClient> client(new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_));
-    AttachClientInfo(client.get());
-    clientMgr_.push_back(std::move(client));
 }
 
 RuruLoop::~RuruLoop()
@@ -282,7 +274,7 @@ void RuruLoop::HttpRequestHandle(RuruConnectionData* con)
         const char *path = NULL;
         size_t pathLen = 0;
         int32_t minorVersion = 0;
-        size_t numHeaders = 0;
+        size_t numHeaders = 16;
         struct phr_header headers[16];
 
         int32_t status = phr_parse_request((const char *)con->data, con->length, 
@@ -300,7 +292,25 @@ void RuruLoop::HttpRequestHandle(RuruConnectionData* con)
             if (contentLength > 0){
                 if (con->length == status + static_cast<int32_t>(contentLength)) {
                     //body parse
-                    std::cout<<(const char *)(con->data + status)<<std::endl;
+                    RuruAddress address;
+                    bool ret = BodyParse((const char *)(con->data + status), static_cast<int32_t>(contentLength), address);
+                    if (ret){
+                        std::unique_ptr<RuruClient> client(new RuruClient(&RuruLoop::dtsCtx_, address, udpfd_));
+                        AttachClientInfo(client.get());
+                        clientMgr_.push_back(std::move(client));
+                        std::string response("HTTP/1.1 200 OK\r\n"
+                                            "Content-Type: application/json\r\n"
+                                            "Connection: close\r\n"
+                                            "\r\n");
+                        SocketWrite(con->fd, response.c_str(), response.length());
+                    }
+                    else{
+                        SocketWrite(con->fd, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
+                    }
+                    
+                    close(con->fd);
+                    delete con;
+                    return;
                 }
             }
         }
@@ -311,11 +321,41 @@ void RuruLoop::HttpRequestHandle(RuruConnectionData* con)
         }
         else{
             if (con->length == HTTP_MAX_SIZE){
-                SocketWrite(con->fd, (const uint8_t *)(HTTP_BAD_REQUEST), strlen(HTTP_BAD_REQUEST));
+                SocketWrite(con->fd, HTTP_BAD_REQUEST, strlen(HTTP_BAD_REQUEST));
                 close(con->fd);
                 delete con;
                 return;
             }
         }
     }
+}
+
+bool RuruLoop::BodyParse(const char *data, int32_t length, RuruAddress &address)
+{
+    if (data == NULL || length < 0){
+        return false;
+    }
+    cJSON *root = cJSON_Parse(data);
+
+    if (root == NULL){
+        return false;
+    }
+
+    cJSON *ip = cJSON_GetObjectItem(root, "ip");
+    cJSON *port = cJSON_GetObjectItem(root, "port");
+    if (ip == NULL || port == NULL){
+        cJSON_Delete(root);
+        return false;
+    }
+
+    if (!cJSON_IsString(ip) || !cJSON_IsNumber(port)){
+        cJSON_Delete(root);
+        return false;
+    }
+    address.host = ntohl((uint32_t)inet_addr(ip->valuestring));
+    address.port = port->valueint;
+
+    cJSON_Delete(root);
+
+    return true;
 }

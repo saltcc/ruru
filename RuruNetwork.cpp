@@ -58,7 +58,8 @@ int32_t CreateTcpSocket(const char *host, const char *port)
     if (fd < 0){
         return -1;
     }
-
+    int32_t reuse = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
     svr_addr.sin_family = AF_INET;
     svr_addr.sin_port = htons(std::atoi(port));
     svr_addr.sin_addr.s_addr = inet_addr((const char *)host);
@@ -113,6 +114,11 @@ const char *Host2Ip(uint32_t host)
     struct in_addr addr;
     addr.s_addr = htonl(host);
     return inet_ntoa(addr);
+}
+
+ssize_t SocketWrite(int fd, const char* buf, size_t len)
+{
+    return SocketWrite(fd, (const uint8_t *)buf, len);
 }
 
 ssize_t SocketWrite(int fd, const uint8_t* buf, size_t len)

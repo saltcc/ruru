@@ -18,4 +18,5 @@ int32_t CreateTcpSocket(const char *host, const char *port);
 int32_t SetNonBlocking(int32_t sfd);
 uint32_t Ip2Host(const char *ip);
 const char *Host2Ip(uint32_t host);
+ssize_t SocketWrite(int fd, const char* buf, size_t len);
 ssize_t SocketWrite(int fd, const uint8_t* buf, size_t len);

@@ -27,16 +27,25 @@ void SendPendingDtls();
 bool doHandeShake();
 bool opensslLabInit();
 bool dtlsTransInit();
-bool socketCreateSet();
+bool socketCreateSet(const char *ip, const char *port, const char *rip, const char *rport);
 static int conn_output(void *addr, void *buf, size_t length, uint8_t tos, uint8_t set_df);
 static void *handle_packets(void *arg);
 static int receive_cb(struct socket *sock, union sctp_sockstore addr, void *data,size_t datalen, struct sctp_rcvinfo rcv, int flags, void *ulp_info);
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc <= 4){
+        std::cerr<<"./Client remoteip remoteport"<<std::endl;
+        return 0;
+    }
+    const char *lip = argv[1];
+    const char *lport = argv[2];
+    const char *rip = argv[3];
+    const char *rport = argv[4];
+
     opensslLabInit();
     dtlsTransInit();
-    socketCreateSet();
+    socketCreateSet(lip, lport, rip, rport);
 
     bool handshake = doHandeShake();
     if (!handshake){
@@ -86,7 +95,7 @@ int main()
                                 (socklen_t)sizeof(struct sctp_sndinfo), SCTP_SENDV_SNDINFO, 0) < 0) {
             perror("usrsctp_sendv");
         }
-        sleep(1000);
+        sleep(1);
     }
 
     usrsctp_shutdown(s, SHUT_WR);
@@ -173,12 +182,12 @@ bool dtlsTransInit()
     return true;
 }
 
-bool socketCreateSet()
+bool socketCreateSet(const char *lip, const char *lport, const char *rip, const char *rport)
 {
     memset(&ser_addr, 0, sizeof(ser_addr));
     ser_addr.sin_family = AF_INET;
-    ser_addr.sin_addr.s_addr = inet_addr("192.168.28.128");
-    ser_addr.sin_port = htons(9999);
+    ser_addr.sin_addr.s_addr = inet_addr(rip);
+    ser_addr.sin_port = htons(atoi(rport));
 
     if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
@@ -188,8 +197,8 @@ bool socketCreateSet()
     
     struct sockaddr_in cli_addr;
     cli_addr.sin_family = AF_INET;
-    cli_addr.sin_port = htons(8000);
-    cli_addr.sin_addr.s_addr = inet_addr("192.168.28.128");
+    cli_addr.sin_port = htons(atoi(lport));
+    cli_addr.sin_addr.s_addr = inet_addr(lip);
     int32_t ret = bind(fd, (struct sockaddr* )&cli_addr, sizeof(struct sockaddr_in));
     if (ret < 0)
     {

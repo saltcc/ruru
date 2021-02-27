@@ -6,6 +6,7 @@ set(EXAMPLES_DIR ${CMAKE_CURRENT_BINARY_DIR}/examples)
 
 add_library(ruru
     picohttpparser.c
+    cJSON.c
     RuruArena.cpp
     RuruCert.cpp
     RuruDtls.cpp

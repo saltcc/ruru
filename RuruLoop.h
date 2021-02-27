@@ -11,6 +11,7 @@
 extern "C" {
 #endif
 #include "picohttpparser.h"
+#include "cJSON.h"
 #ifdef __cplusplus
 }
 #endif
@@ -41,4 +42,5 @@ private:
     void Destory();
     bool ScanClientCacheData();
     void HttpRequestHandle(RuruConnectionData* con);
+    bool BodyParse(const char *data, int32_t length, RuruAddress &address);
 };
