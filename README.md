@@ -4,6 +4,7 @@
 * DTLS - [OpenSSL](https://www.openssl.org/)
 * SCTP - [usrsctp](https://github.com/sctplab/usrsctp)
 * HTTP - [picohttpparser](https://github.com/h2o/picohttpparser)
+* JSON - [cJSON](https://github.com/DaveGamble/cJSON)
 
 #### Building
 ```bash
