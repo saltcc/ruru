@@ -40,6 +40,9 @@ void RuruClient::HandleDtlsPacket(const uint8_t *data, int32_t length)
                 printf("%s\n",ERR_error_string(r, nullptr));
             }
         }
+        else{
+            ClientSendPendingDtls();
+        }
     }
     else{
         dtlsTransport.bHandShakeDone = true;

@@ -55,7 +55,7 @@ public:
     static void UsrsctpStartInit();
     bool SendUsrSctpData(RuruSctpMessage *sctpMsg);
     void RecvUsrSctpData(const uint8_t *data, int32_t length);
-    void SendSctpCacheData();
+    bool SendSctpCacheData();
     RuruClient *client;
     bool OpenSctp();
 

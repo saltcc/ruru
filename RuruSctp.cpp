@@ -201,10 +201,11 @@ void RuruSctp::PushMsg2ClientCache(RuruSctpMessage *msg)
     client->cache.push(cacheData);
 }
 
-void RuruSctp::SendSctpCacheData()
+bool RuruSctp::SendSctpCacheData()
 {
+    bool sendStatus = true;
     if (!bHandShakeDone){
-        return;
+        return false;
     }
 
     while (!client->cache.empty()){
@@ -219,8 +220,9 @@ void RuruSctp::SendSctpCacheData()
             if (errno != EWOULDBLOCK && errno != EAGAIN){
                 usrsctp_close(sock_);
                 bHandShakeDone = false;
-                return;
             }
+            sendStatus = false;
+            break;
         }
         else
         {
@@ -229,11 +231,15 @@ void RuruSctp::SendSctpCacheData()
             sendData = nullptr;
         }
     }
+    return sendStatus;
 }
 
 bool RuruSctp::SendUsrSctpData(RuruSctpMessage *sctpMsg)
 {
-    SendSctpCacheData();
+    if (!SendSctpCacheData()){
+        PushMsg2ClientCache(sctpMsg);
+        return false;
+    }
 
     if (sctpMsg && bHandShakeDone){
         struct sctp_sndinfo info;
